@@ -1,0 +1,40 @@
+doctype html
+html(lang="es")
+    head
+        meta(charset="UTF-8")
+        meta(http-equiv="X-UA-Compatible", content="IE=edge")
+        meta(name="viewport", content="width=device-width, initial-scale=1.0")
+        title Stripe test
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://js.stripe.com/v3/"></script>
+    body   
+        div(class="w-full h-screen flex justify-center items-center bg-[#F0F0F0] shadow-md")
+            div(class="w-2/6 p-4 bg-white rounded-lg")
+                //- <div id="details">
+                //-     <input id="cardholder-name" type="text" placeholder="Cardholder name">
+                //-     //- <!-- placeholder for Elements -->
+                //-     <form id="payment-form">
+                //-         <div id="card-element"></div>
+                //-         <button id="card-button" class="px-4 py-2 bg-indigo-600  text-white rounded-lg">Next</button>
+                //-     </form>
+                //- </div>
+                div(id="details")
+                    form(action="" id="payment-form")
+                        div(id="card-element")
+                        div(id="error-messages")
+                        <button id="card-button" class="px-4 py-2 bg-indigo-600  text-white rounded-lg">Next</button>
+
+                <div id="plans" hidden>
+                    <form id="installment-plan-form" class="flex flex-col gap-4" >
+                        <label><input id="immediate-plan" type="radio" name="installment_plan" value="-1" />Immediate</label>
+                        <input id="payment-intent-id" type="hidden" />
+                    </form>
+                    <button id="confirm-button" class="px-4 py-2 bg-indigo-600  text-white rounded-lg">Confirm Payment</button>
+                </div>
+
+                <div id="result" hidden>
+                    <p id="status-message"></p>
+                </div>
+
+        script(src="home.js") 
+
