@@ -19,59 +19,14 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(express.json());
 
-app.get('/', (req, res) => {
-    res.render('home')
-})
 
-app.post('/collect_details', async (req, res) => {
-    const {paymentIntentId, payment_method_id} = req.body
-    try {
-        const intent = await stripe.paymentIntents.update(paymentIntentId ,{
-            payment_method: payment_method_id,
-            payment_method_options: {
-                card: {
-                    installments: {
-                        enabled: true,
-                    },
-                },
-            },
-        });
-
-        return res.json({
-            intent_id: intent.id,
-            available_plans: intent.payment_method_options.card.installments.available_plans,
-        });
-    } catch (err) {
-        // "err" contiene un mensaje que explica por qué falló la solicitud
-        return res.status(500).json({ error: err.message });
-    }
-})
-
-app.post('/confirm_payment', async (req, res) => {
-    // console.log(req.body)
-    try {
-        let confirmData = {};
-        if (req.body.selected_plan !== undefined) {
-            confirmData = {
-                payment_method_options: {
-                    card: {
-                        installments: {
-                            plan: req.body.selected_plan,
-                        },
-                    },
-                },
-            };
-        }
-
-        const intent = await stripe.paymentIntents.confirm(
-            req.body.payment_intent_id,
-            confirmData,
-        );
-
-        return res.send({ success: true, status: intent.status });
-    } catch (err) {
-        return res.status(500).send({ error: err.message });
-    }
+app.get('/', async (req, res) => {
+    const paymentMethods = await stripe.customers.listPaymentMethods('cus_NcUeM7T81paZsZ',
+        { type: 'card' }
+    );
+    res.render('home', {
+        paymentMethods: paymentMethods.data
+    })
 })
 
 app.get('/config', (req, res) => {
@@ -79,31 +34,99 @@ app.get('/config', (req, res) => {
         publishableKey: 'pk_test_51Mj62HGujNA0IK1b3jh6Z02ewmPIXsW7B3WicXh1j76dHXior5tLSudQYV4ITrcKGN58rJB04CgqtcgjNZAcbxOz00kwsj2T6u'
     })
 })
-app.get('/create-payment-intent', async (req, res) => {
-    // console.log(req.body)
-    try {
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount: 300000,
-            currency: 'mxn',
-            automatic_payment_methods: { enabled: true },
-            // customer: customer.id
-        });
-        console.log(paymentIntent)
 
-        // Podríamos confirmar sin cuotas si no hay planes disponibles,
-        // pero démosle al usuario la oportunidad de elegir una tarjeta diferente
-        // si las cuotas no están disponibles.
-        // console.log(intent)
-        return res.send({
-            id: paymentIntent.id,
-            clientSecret: paymentIntent.client_secret
-        })
-    } catch (err) {
-        console.log(err)
-        // "err" contiene un mensaje que explica por qué falló la solicitud
-        return res.status(500).json({ error: err.message });
+app.get('/create-setup-intent', async (req, res) => {
+    try {
+        const setupIntent = await stripe.setupIntents.create({
+            payment_method_types: ['card'],
+            customer: 'cus_NcUeM7T81paZsZ'
+        });
+
+        return res.send({ setuptIntentId: setupIntent.id, clientSecret: setupIntent.client_secret })
+    } catch (error) {
+        return res.status(500).send({ error: error.message })
     }
 })
+
+app.post('/confirm-setup-intent', async (req, res) => {
+    const { setupIntentId, paymentMethodId } = req.body
+    try {
+        const setupIntent = await stripe.setupIntents.confirm(setupIntentId, {
+            payment_method: paymentMethodId,
+            return_url: 'http://localhost:4005/complete'
+        });
+        return res.send(setupIntent)
+    } catch (error) {
+        return res.status(500).json({ error: error.message })
+    }
+
+})
+
+app.post('/create-payment-intent', async (req, res) => {
+    const { paymentMethodId } = req.body
+    try {
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: 222222,
+            currency: 'mxn',
+            customer: 'cus_NcUeM7T81paZsZ',
+            payment_method: paymentMethodId,
+            payment_method_options: {
+                card: {
+                    installments: {
+                        enabled: true,
+                    },
+                },
+            },
+            off_session: false
+        });
+        return res.send({ paymentIntentId: paymentIntent.id, available_plans: paymentIntent.payment_method_options.card.installments.available_plans })
+    } catch (error) {
+        return res.status(500).json({ error: error.message })
+    }
+})
+
+app.post('/confirm-payment-intent', async (req, res) => {
+    const { paymentIntentId, plan } = req.body
+    let confirmPaymentIntent
+    try {
+        if (plan) {
+            confirmPaymentIntent = await stripe.paymentIntents.confirm(paymentIntentId, {
+                payment_method_options: {
+                    card: {
+                        installments: {
+                            plan
+                        },
+                    },
+                },
+                return_url: 'http://localhost:4005/complete'
+            })
+        } else {
+            confirmPaymentIntent = await stripe.paymentIntents.confirm(paymentIntentId, {
+                return_url: 'http://localhost:4005/complete'
+            })
+        }
+
+        return res.send(confirmPaymentIntent)
+    } catch (error) {
+        return res.status(500).json({ error: error.message })
+    }
+})
+
+app.get('/complete', async (req, res) => {
+    // Simulando que este paymentIntentId viene del checkout y no de los querys de la url
+    const { payment_intent } = req.query
+
+    const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent)
+    console.log(paymentIntent)
+    return res.render('complete', {
+        pagina: 'Pago completo',
+        paymentIntent
+    })
+
+
+})
+
+
 
 const PORT = 4005
 app.listen(PORT, () => {

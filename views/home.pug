@@ -4,37 +4,55 @@ html(lang="es")
         meta(charset="UTF-8")
         meta(http-equiv="X-UA-Compatible", content="IE=edge")
         meta(name="viewport", content="width=device-width, initial-scale=1.0")
-        title Stripe test
+        title=pagina
         <script src="https://cdn.tailwindcss.com"></script>
         <script src="https://js.stripe.com/v3/"></script>
     body   
         div(class="w-full h-screen flex justify-center items-center bg-[#F0F0F0] shadow-md")
-            div(class="w-2/6 p-4 bg-white rounded-lg")
-                //- <div id="details">
-                //-     <input id="cardholder-name" type="text" placeholder="Cardholder name">
-                //-     //- <!-- placeholder for Elements -->
-                //-     <form id="payment-form">
-                //-         <div id="card-element"></div>
-                //-         <button id="card-button" class="px-4 py-2 bg-indigo-600  text-white rounded-lg">Next</button>
-                //-     </form>
-                //- </div>
-                div(id="details")
-                    form(action="" id="payment-form")
+            div(class="w-2/6 p-4 bg-white rounded-lg flex flex-col gap-4")
+                div(id="cards" class="flex flex-col gap-4")
+                    div(class="flex flex-col gap-4")
+                        if paymentMethods.length >= 1
+                            each paymentMethod, i in paymentMethods
+                                label(for=`paymentMethod${i}` class="w-full p-4 rounded-lg bg-[#F2F2F2] flex justify-between items-center gap-4")
+                                    div(class="flex gap-4")
+                                        input(type="radio", name="paymentMethod" id=`paymentMethod${i}` value=paymentMethod.id)
+                                        div(class="flex gap-2")
+                                            span(class="text-xs")=`${paymentMethod.card.last4}`
+                                            span(class="text-xs")=`${paymentMethod.card.exp_month}`
+                                            span(class="text-xs")=`${paymentMethod.card.exp_year}`
+                                    if paymentMethod.card.brand == 'visa'
+                                        div(class="w-7 h-5 md:w-9 md:h-6 border border-[#E5E5E5] rounded bg-white flex justify-center items-center")
+                                            img(src="/img/visa.svg" alt="visa" class="w-5/6")
+                                    if paymentMethod.card.brand == 'mastercard'
+                                        div(class="w-7 h-5 md:w-9 md:h-6 rounded bg-black flex justify-center items-center")
+                                                img(src="/img/mastercard.svg" alt="mastercard" class="w-4/6")
+                                    if paymentMethod.card.brand == 'amex'
+                                        div(class="w-7 h-5 md:w-9 md:h-6 rounded bg-[#016fd0] flex justify-center items-center overflow-hidden")
+                                            img(src="/img/ame_exp.svg" alt="american-express" class="w-full")
+                        else 
+                            div(class="flex justify-center items-center w-full h-12")
+                                span(class="text-xs") No tienes tarjetas
+                    div(class="flex flex-col gap-2")
+
+                        if paymentMethods.length >= 1
+                            button(class="w-full h-12 rounded-lg bg-[#CC2528] text-xs text-white" id="next") Siguiente
+                        button(class="w-full rounded-lg text-xs text-[#CC2528]" id="add-card") Agregar tarjeta
+                        
+
+                div(class="hidden" id="addCard")
+                    form(class="flex flex-col gap-4")
                         div(id="card-element")
-                        div(id="error-messages")
-                        <button id="card-button" class="px-4 py-2 bg-indigo-600  text-white rounded-lg">Next</button>
+                        button(type="submit" class="w-full h-12 rounded-lg bg-red-600 text-xs text-white") Guardar tarjeta
+                
+                div(id="plans" class="flex flex-col gap-4 hidden")
+                    label(for="plan-1" class='w-full p-4 rounded-lg bg-[#F2F2F2] flex justify-between items-center gap-4 text-xs')
+                        div(class="flex gap-4")
+                            input(type="radio" name="plan" id="plan-1" value='-1')
+                            span 1 pago
 
-                <div id="plans" hidden>
-                    <form id="installment-plan-form" class="flex flex-col gap-4" >
-                        <label><input id="immediate-plan" type="radio" name="installment_plan" value="-1" />Immediate</label>
-                        <input id="payment-intent-id" type="hidden" />
-                    </form>
-                    <button id="confirm-button" class="px-4 py-2 bg-indigo-600  text-white rounded-lg">Confirm Payment</button>
-                </div>
+                button(id="pay" class="w-full h-12 rounded-lg bg-red-600 text-xs text-white hidden") Pagar
 
-                <div id="result" hidden>
-                    <p id="status-message"></p>
-                </div>
-
+                div(class="w-full p-2 bg-red-100 rounded-lg text-red-800 text-xs text-center hidden" id="errors")
         script(src="home.js") 
 
